@@ -1,0 +1,12 @@
+/target/
+/build/
+/.gradle/
+/.idea/
+/.vscode/
+*.iml
+*.log
+.DS_Store
+
+# Personal / coursework documents — do not publish
+*.rtf
+.env

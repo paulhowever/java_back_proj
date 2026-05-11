@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: team-coord
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/teamcoord}
+    username: ${DB_USER:teamcoord}
+    password: ${DB_PASSWORD:teamcoord}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:2525}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${MAIL_SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${MAIL_SMTP_STARTTLS:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  jwt:
+    # MUST be provided via env (JWT_SECRET); must be at least 32 bytes long.
+    secret: ${JWT_SECRET:}
+    expiration-seconds: ${JWT_EXP_SECONDS:3600}
+  bootstrap:
+    admin-email: ${BOOTSTRAP_ADMIN_EMAIL:admin@local}
+    admin-password: ${BOOTSTRAP_ADMIN_PASSWORD:admin12345}
+  business:
+    max-active-tasks-per-user: ${BUSINESS_MAX_ACTIVE_TASKS:5}
+    critical-blocker-threshold: ${BUSINESS_CRITICAL_BLOCKER_THRESHOLD:2}
