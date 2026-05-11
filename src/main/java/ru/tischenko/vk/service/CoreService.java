@@ -148,6 +148,34 @@ public class CoreService {
 
     // ===== TEAM CRUD =====
 
+    @Transactional(readOnly = true)
+    public TeamEntity getTeamWithMembers(Long id) {
+        TeamEntity team = getTeam(id);
+        team.getMembers().size();
+        return team;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<TeamEntity> listTeamsWithMembers(Long projectId, Pageable pageable) {
+        Page<TeamEntity> page = listTeams(projectId, pageable);
+        page.forEach(t -> t.getMembers().size());
+        return page;
+    }
+
+    @Transactional(readOnly = true)
+    public SubTeamEntity getSubTeamWithMembers(Long id) {
+        SubTeamEntity sub = getSubTeam(id);
+        sub.getMembers().size();
+        return sub;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SubTeamEntity> listSubTeamsWithMembers(Long teamId, Pageable pageable) {
+        Page<SubTeamEntity> page = listSubTeams(teamId, pageable);
+        page.forEach(s -> s.getMembers().size());
+        return page;
+    }
+
     @Transactional
     public TeamEntity createTeam(TeamRequest req) {
         TeamEntity team = new TeamEntity();
@@ -298,6 +326,7 @@ public class CoreService {
 
     public record AssignSubTeamResultLog(boolean hasLead, Long warningNotificationId) {}
 
+    @Transactional(readOnly = true)
     public AnalyzeTeamResponse analyzeTeam(Long teamId) {
         TeamEntity team = teamRepository.findById(teamId).orElseThrow(() -> new Exceptions.NotFoundException("Team not found"));
         Map<UserLevel, Long> grouped = team.getMembers().stream().collect(Collectors.groupingBy(UserEntity::getLevel, Collectors.counting()));

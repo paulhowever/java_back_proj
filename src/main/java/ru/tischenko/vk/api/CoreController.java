@@ -131,7 +131,7 @@ public class CoreController {
     public TeamResponse createTeam(@RequestBody @Valid TeamRequest req) { return toTeamResponse(service.createTeam(req)); }
 
     @GetMapping("/teams/{id}") @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public TeamResponse getTeam(@PathVariable Long id) { return toTeamResponse(service.getTeam(id)); }
+    public TeamResponse getTeam(@PathVariable Long id) { return toTeamResponse(service.getTeamWithMembers(id)); }
 
     @DeleteMapping("/teams/{id}") @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -139,7 +139,7 @@ public class CoreController {
 
     @GetMapping("/teams") @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public Page<TeamResponse> listTeams(@RequestParam(required = false) Long projectId, Pageable pageable) {
-        return service.listTeams(projectId, pageable).map(this::toTeamResponse);
+        return service.listTeamsWithMembers(projectId, pageable).map(this::toTeamResponse);
     }
 
     @PutMapping("/teams/{id}/members") @PreAuthorize("hasRole('ADMIN')")
@@ -155,7 +155,7 @@ public class CoreController {
     public SubTeamResponse createSubTeam(@RequestBody @Valid SubTeamRequest req) { return toSubTeamResponse(service.createSubTeam(req)); }
 
     @GetMapping("/subteams/{id}") @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public SubTeamResponse getSubTeam(@PathVariable Long id) { return toSubTeamResponse(service.getSubTeam(id)); }
+    public SubTeamResponse getSubTeam(@PathVariable Long id) { return toSubTeamResponse(service.getSubTeamWithMembers(id)); }
 
     @DeleteMapping("/subteams/{id}") @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -163,7 +163,7 @@ public class CoreController {
 
     @GetMapping("/subteams") @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public Page<SubTeamResponse> listSubTeams(@RequestParam(required = false) Long teamId, Pageable pageable) {
-        return service.listSubTeams(teamId, pageable).map(this::toSubTeamResponse);
+        return service.listSubTeamsWithMembers(teamId, pageable).map(this::toSubTeamResponse);
     }
 
     // ===== SPRINT CRUD =====
