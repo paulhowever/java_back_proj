@@ -108,7 +108,8 @@ public class CoreService {
     @Transactional @CacheEvict(value = "projects", key = "#id")
     public void deleteProject(Long id) { projectRepository.delete(getProject(id)); }
     public Page<ProjectEntity> listProjects(ProjectStatus status, LocalDate startDateFrom, LocalDate startDateTo, String nameContains, Pageable pageable) {
-        return projectRepository.search(status, startDateFrom, startDateTo, nameContains, pageable);
+        String normalisedName = (nameContains == null || nameContains.isBlank()) ? "" : nameContains.trim();
+        return projectRepository.search(status, startDateFrom, startDateTo, normalisedName, pageable);
     }
 
     // ===== TASK =====
