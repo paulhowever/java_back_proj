@@ -214,8 +214,12 @@ public class CoreService {
     @Transactional
     public TeamEntity setTeamMembers(Long teamId, List<Long> userIds) {
         TeamEntity team = getTeam(teamId);
-        List<UserEntity> users = userRepository.findAllById(userIds);
-        if (users.size() != new HashSet<>(userIds).size()) {
+        Set<Long> uniqueIds = new HashSet<>(userIds);
+        if (uniqueIds.size() != userIds.size()) {
+            throw new Exceptions.BusinessRuleException("Duplicate user ids in request");
+        }
+        List<UserEntity> users = userRepository.findAllById(uniqueIds);
+        if (users.size() != uniqueIds.size()) {
             throw new Exceptions.NotFoundException("One or more users not found");
         }
         team.getMembers().clear();
@@ -376,6 +380,7 @@ public class CoreService {
         return taskRepository.save(task);
     }
 
+    @Transactional(readOnly = true)
     public CriticalTaskResponse findCriticalTasks(Long sprintId) {
         getSprint(sprintId);
         List<TaskEntity> tasks = taskRepository.findBySprintId(sprintId);
@@ -423,9 +428,11 @@ public class CoreService {
         sprintRepository.save(sprint);
 
         List<Long> notificationIds = new ArrayList<>();
+        int unassignedSkipped = 0;
         for (TaskEntity t : unfinishedTasks) {
             UserEntity recipient = t.getAssignee();
             if (recipient == null) {
+                unassignedSkipped++;
                 continue;
             }
             NotificationEntity n = new NotificationEntity();
@@ -440,7 +447,8 @@ public class CoreService {
         if (!unfinishedTasks.isEmpty()) {
             eventService.publishRiskDetected("Sprint " + sprint.getId() + " closed with " + unfinishedTasks.size() + " unfinished tasks");
         }
-        log.info("completeSprint sprintId={} unfinished={} notifications={}", sprint.getId(), unfinishedTasks.size(), notificationIds.size());
+        log.info("completeSprint sprintId={} unfinished={} notifications={} unassignedSkipped={}",
+                sprint.getId(), unfinishedTasks.size(), notificationIds.size(), unassignedSkipped);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("result", "Sprint completed");
@@ -467,9 +475,7 @@ public class CoreService {
             return List.of();
         }
         List<TaskEntity> rebalanced = rebalanceStrategy.rebalance(tasks, users);
-        for (TaskEntity t : rebalanced) {
-            taskRepository.save(t);
-        }
+        taskRepository.saveAll(rebalanced);
         eventService.publishRebalanceDone(request.sprintId());
         log.info("bulkRebalance sprintId={} tasks={} users={}", request.sprintId(), rebalanced.size(), users.size());
         return rebalanced.stream().map(TaskEntity::getId).toList();

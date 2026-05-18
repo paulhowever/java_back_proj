@@ -68,8 +68,18 @@ tasks.register('integrationTest', Test) {
         includeTags 'integration'
     }
     shouldRunAfter tasks.test
+    // Help Testcontainers discover Docker Desktop on macOS where the daemon
+    // socket lives under the user home and /var/run/docker.sock may be a symlink.
     def dockerDesktopSocket = file("${System.getProperty('user.home')}/.docker/run/docker.sock")
     if (dockerDesktopSocket.exists()) {
         environment 'DOCKER_HOST', "unix://${dockerDesktopSocket.absolutePath}"
+        environment 'TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE', '/var/run/docker.sock'
     }
+    // Inherit env from CI / shell when running in non-Desktop environments.
+    if (System.getenv('DOCKER_HOST')) {
+        environment 'DOCKER_HOST', System.getenv('DOCKER_HOST')
+    }
+    // Pin docker-java to an API version Docker Engine 29.x accepts on /info.
+    // (Without this, Engine 29 returns HTTP 400 to docker-java's default probe.)
+    environment 'DOCKER_API_VERSION', System.getenv('DOCKER_API_VERSION') ?: '1.44'
 }
