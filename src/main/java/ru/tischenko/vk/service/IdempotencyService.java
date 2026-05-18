@@ -11,6 +11,12 @@ import java.util.Optional;
 
 @Service
 public class IdempotencyService {
+    /**
+     * Marker stored in {@code response_code} while the operation is in-flight.
+     * 102 mirrors the HTTP "Processing" semantics — convention only, never returned to clients.
+     */
+    public static final int RESPONSE_CODE_PROCESSING = 102;
+
     private final IdempotencyRecordRepository repository;
 
     public IdempotencyService(IdempotencyRecordRepository repository) {
@@ -38,7 +44,7 @@ public class IdempotencyService {
         IdempotencyRecordEntity record = new IdempotencyRecordEntity();
         record.setIdempotencyKey(key);
         record.setOperation(operation);
-        record.setResponseCode(102);
+        record.setResponseCode(RESPONSE_CODE_PROCESSING);
         record.setResponseBody("PROCESSING");
         try {
             repository.saveAndFlush(record);

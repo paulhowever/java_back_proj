@@ -81,7 +81,20 @@ public class CoreService {
     }
 
     public UserEntity getUser(Long id) { return userRepository.findById(id).orElseThrow(() -> new Exceptions.NotFoundException("User not found")); }
-    @Transactional public UserEntity updateUser(Long id, UserRequest req) { UserEntity u = getUser(id); u.setEmail(req.email()); u.setRole(req.role()); u.setLevel(req.level()); return userRepository.save(u); }
+    @Transactional public UserEntity updateUser(Long id, UserRequest req) {
+        UserEntity u = getUser(id);
+        u.setEmail(req.email());
+        u.setRole(req.role());
+        u.setLevel(req.level());
+        if (req.password() != null && !req.password().isBlank()) {
+            u.setPasswordHash(passwordEncoder.encode(req.password()));
+        }
+        try {
+            return userRepository.save(u);
+        } catch (DataIntegrityViolationException ex) {
+            throw new Exceptions.ConflictException("Email already exists");
+        }
+    }
     @Transactional public void deleteUser(Long id) { userRepository.delete(getUser(id)); }
     public Page<UserEntity> listUsers(Role role, UserLevel level, Boolean enabled, Pageable pageable) {
         return userRepository.search(role, level, enabled, pageable);

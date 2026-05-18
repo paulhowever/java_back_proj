@@ -44,6 +44,7 @@ public final class Dtos {
 
     public record StartTaskRequest(@NotNull Long taskId) {}
     public record AssignSubTeamRequest(@NotNull Long subTeamId, @NotEmpty List<Long> userIds) {}
+    public record AssignSubTeamResponse(boolean hasLead, Long warningNotificationId) {}
     public record AnalyzeTeamResponse(boolean hasLead, long juniors, long middles, long leads, String recommendation) {}
     public record CriticalTaskResponse(List<Long> criticalTaskIds) {}
     public record CompleteSprintRequest(@NotNull Long sprintId) {}

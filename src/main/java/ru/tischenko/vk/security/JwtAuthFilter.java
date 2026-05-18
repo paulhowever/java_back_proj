@@ -39,7 +39,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 var ud = userDetailsService.loadUserByUsername(username);
                 var authToken = new UsernamePasswordAuthenticationToken(ud, null, ud.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authToken);
-            } catch (JwtException ex) {
+            } catch (JwtException | IllegalArgumentException ex) {
+                // IllegalArgumentException covers jjwt's "token cannot be null/empty"
+                // path (e.g. bare "Bearer " header) — would otherwise escape the filter
+                // and surface as a 500 instead of 401.
                 log.debug("Rejecting request: invalid JWT ({})", ex.getMessage());
                 SecurityContextHolder.clearContext();
             } catch (UsernameNotFoundException ex) {

@@ -6,7 +6,6 @@ import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ru.tischenko.vk.api.dto.Dtos.*;
@@ -212,12 +211,9 @@ public class CoreController {
 
     @PostMapping("/business/subteam/assign") @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Assign users to sub-team (warns if no lead)")
-    public ResponseEntity<?> assignSubTeam(@RequestBody @Valid AssignSubTeamRequest req) {
+    public AssignSubTeamResponse assignSubTeam(@RequestBody @Valid AssignSubTeamRequest req) {
         var result = service.assignUsersToSubTeam(req);
-        return ResponseEntity.ok(Map.of(
-                "hasLead", result.hasLead(),
-                "warningNotificationId", result.warningNotificationId() == null ? "" : result.warningNotificationId()
-        ));
+        return new AssignSubTeamResponse(result.hasLead(), result.warningNotificationId());
     }
 
     @GetMapping("/business/team/{teamId}/analysis") @PreAuthorize("hasAnyRole('USER','ADMIN')")
@@ -252,7 +248,7 @@ public class CoreController {
         if (idempotencyKey != null) {
             var existing = idempotencyService.reserveOrGetExisting(idempotencyKey, "bulkRebalance");
             if (existing.isPresent()) {
-                if (existing.get().getResponseCode() == 102) {
+                if (existing.get().getResponseCode() == IdempotencyService.RESPONSE_CODE_PROCESSING) {
                     throw new ru.tischenko.vk.service.Exceptions.ConflictException("Idempotent operation is already in progress");
                 }
                 return new IdempotentResultResponse(
