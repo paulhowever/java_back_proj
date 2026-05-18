@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import ru.tischenko.vk.service.Exceptions.*;
 
 import java.time.Instant;
@@ -51,9 +53,23 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body(404, "Not Found", ex.getMessage(), req, null));
     }
 
+    @ExceptionHandler(NoResourceFoundException.class)
+    ResponseEntity<?> noResource(NoResourceFoundException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body(404, "Not Found", "No such endpoint", req, null));
+    }
+
     @ExceptionHandler({ConflictException.class, ObjectOptimisticLockingFailureException.class})
     ResponseEntity<?> conflict(Exception ex, HttpServletRequest req) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body(409, "Conflict", ex.getMessage(), req, null));
+    }
+
+    // DataIntegrityViolationException is normally raised at commit time (e.g. unique-index
+    // violations on UPDATE), past the service-level try/catch. Catching it here makes 409 the
+    // single source of truth for "DB-level invariant violation" instead of leaking 500.
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    ResponseEntity<?> dataIntegrity(DataIntegrityViolationException ex, HttpServletRequest req) {
+        log.debug("Data integrity violation at {}: {}", req == null ? "?" : req.getRequestURI(), ex.getMostSpecificCause().getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(body(409, "Conflict", "Data integrity violation", req, null));
     }
 
     @ExceptionHandler(BusinessRuleException.class)
