@@ -106,6 +106,8 @@ create table idempotency_records
     created_at      timestamp    not null default now()
 );
 
+-- Indexes for the fields exposed as filters/sort on the listing endpoints.
+-- GET /api/v1/tasks filters by status and assigneeId; GET /api/v1/projects by status.
 create index idx_tasks_status on tasks (status);
 create index idx_tasks_assignee on tasks (assignee_id);
 create index idx_projects_status on projects (status);
