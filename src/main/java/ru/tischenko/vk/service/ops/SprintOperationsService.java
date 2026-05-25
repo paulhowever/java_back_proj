@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.tischenko.vk.api.dto.Dtos.BulkRebalanceRequest;
 import ru.tischenko.vk.api.dto.Dtos.CompleteSprintRequest;
+import ru.tischenko.vk.api.dto.Dtos.CompleteSprintResponse;
 import ru.tischenko.vk.domain.Enums.DeliveryStatus;
 import ru.tischenko.vk.domain.Enums.NotificationType;
 import ru.tischenko.vk.domain.Enums.SprintStatus;
@@ -25,10 +26,8 @@ import ru.tischenko.vk.service.Exceptions;
 import ru.tischenko.vk.service.strategy.RebalanceStrategy;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -57,7 +56,7 @@ public class SprintOperationsService {
     }
 
     @Transactional
-    public Map<String, Object> completeSprint(CompleteSprintRequest req) {
+    public CompleteSprintResponse completeSprint(CompleteSprintRequest req) {
         SprintEntity sprint = sprintRepository.findById(req.sprintId())
                 .orElseThrow(() -> new Exceptions.NotFoundException("Sprint not found"));
         if (sprint.getStatus() == SprintStatus.DONE) {
@@ -65,7 +64,6 @@ public class SprintOperationsService {
         }
         List<TaskEntity> unfinishedTasks = taskRepository.findBySprintIdAndStatusNot(sprint.getId(), TaskStatus.DONE);
         sprint.setStatus(SprintStatus.DONE);
-        sprintRepository.save(sprint);
 
         List<Long> notificationIds = new ArrayList<>();
         int unassignedSkipped = 0;
@@ -90,12 +88,7 @@ public class SprintOperationsService {
         log.info("completeSprint sprintId={} unfinished={} notifications={} unassignedSkipped={}",
                 sprint.getId(), unfinishedTasks.size(), notificationIds.size(), unassignedSkipped);
 
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("result", "Sprint completed");
-        result.put("sprintId", sprint.getId());
-        result.put("unfinishedCount", unfinishedTasks.size());
-        result.put("notificationIds", notificationIds);
-        return result;
+        return new CompleteSprintResponse(sprint.getId(), unfinishedTasks.size(), notificationIds);
     }
 
     @Transactional

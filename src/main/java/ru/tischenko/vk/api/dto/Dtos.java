@@ -85,4 +85,6 @@ public final class Dtos {
 
     public record EscalateCriticalRequest(@NotNull Long sprintId) {}
     public record CriticalEscalationResponse(List<Long> escalatedTaskIds) {}
+
+    public record CompleteSprintResponse(Long sprintId, int unfinishedCount, List<Long> notificationIds) {}
 }

@@ -36,7 +36,6 @@ import ru.tischenko.vk.service.ops.TeamOperationsService;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -278,7 +277,7 @@ public class CoreController {
 
     @PostMapping("/business/sprint/complete") @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Complete sprint: marks DONE, emits notifications for unfinished tasks")
-    public Map<String, Object> completeSprint(@RequestBody @Valid CompleteSprintRequest req) { return sprintOperations.completeSprint(req); }
+    public CompleteSprintResponse completeSprint(@RequestBody @Valid CompleteSprintRequest req) { return sprintOperations.completeSprint(req); }
 
     @PostMapping("/business/sprint/bulk-rebalance") @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Bulk rebalance sprint tasks across project team members (idempotent via Idempotency-Key header)")

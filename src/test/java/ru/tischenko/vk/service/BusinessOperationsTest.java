@@ -44,10 +44,11 @@ import ru.tischenko.vk.service.policy.TaskStartPolicy;
 import ru.tischenko.vk.service.strategy.RebalanceStrategy;
 
 import java.time.LocalDate;
+import ru.tischenko.vk.api.dto.Dtos.CompleteSprintResponse;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -252,12 +253,11 @@ class BusinessOperationsTest {
             return n;
         });
 
-        Map<String, Object> result = b.sprintOps.completeSprint(new CompleteSprintRequest(5L));
+        CompleteSprintResponse result = b.sprintOps.completeSprint(new CompleteSprintRequest(5L));
 
         assertEquals(SprintStatus.DONE, sprint.getStatus());
-        assertEquals(2, result.get("unfinishedCount"));
-        List<?> ids = (List<?>) result.get("notificationIds");
-        assertEquals(1, ids.size());
+        assertEquals(2, result.unfinishedCount());
+        assertEquals(1, result.notificationIds().size());
         verify(eventService).publishRiskDetected(any());
     }
 
