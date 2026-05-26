@@ -11,7 +11,7 @@ import ru.tischenko.vk.api.mapper.ApiMappers.UserMapper;
 import ru.tischenko.vk.domain.Enums;
 import ru.tischenko.vk.domain.ProjectEntity;
 import ru.tischenko.vk.domain.UserEntity;
-import ru.tischenko.vk.service.IdempotencyService;
+import ru.tischenko.vk.service.IdempotentOperationExecutor;
 import ru.tischenko.vk.service.ProjectService;
 import ru.tischenko.vk.service.SprintService;
 import ru.tischenko.vk.service.SubTeamService;
@@ -39,7 +39,7 @@ class CoreControllerFilterContractTest {
                 mock(ProjectService.class), mock(SprintService.class), mock(TaskService.class),
                 mock(TeamService.class), mock(SubTeamService.class), mock(TaskDependencyService.class),
                 mock(TeamOperationsService.class), mock(TaskOperationsService.class), mock(SprintOperationsService.class),
-                userMapper, mock(ProjectMapper.class), mock(TaskMapper.class), mock(IdempotencyService.class)
+                userMapper, mock(ProjectMapper.class), mock(TaskMapper.class), mock(IdempotentOperationExecutor.class)
         );
 
         UserEntity entity = new UserEntity();
@@ -61,7 +61,7 @@ class CoreControllerFilterContractTest {
                 mock(SprintService.class), mock(TaskService.class),
                 mock(TeamService.class), mock(SubTeamService.class), mock(TaskDependencyService.class),
                 mock(TeamOperationsService.class), mock(TaskOperationsService.class), mock(SprintOperationsService.class),
-                mock(UserMapper.class), projectMapper, mock(TaskMapper.class), mock(IdempotencyService.class)
+                mock(UserMapper.class), projectMapper, mock(TaskMapper.class), mock(IdempotentOperationExecutor.class)
         );
 
         ProjectEntity entity = new ProjectEntity();

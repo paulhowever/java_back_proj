@@ -20,8 +20,7 @@ import ru.tischenko.vk.domain.Enums.UserLevel;
 import ru.tischenko.vk.domain.SubTeamEntity;
 import ru.tischenko.vk.domain.TaskDependencyEntity;
 import ru.tischenko.vk.domain.TeamEntity;
-import ru.tischenko.vk.service.Exceptions;
-import ru.tischenko.vk.service.IdempotencyService;
+import ru.tischenko.vk.service.IdempotentOperationExecutor;
 import ru.tischenko.vk.service.ProjectService;
 import ru.tischenko.vk.service.SprintService;
 import ru.tischenko.vk.service.SubTeamService;
@@ -53,7 +52,7 @@ public class CoreController {
     private final UserMapper userMapper;
     private final ProjectMapper projectMapper;
     private final TaskMapper taskMapper;
-    private final IdempotencyService idempotencyService;
+    private final IdempotentOperationExecutor idempotentOperationExecutor;
 
     public CoreController(UserService userService,
                           ProjectService projectService,
@@ -68,7 +67,7 @@ public class CoreController {
                           UserMapper userMapper,
                           ProjectMapper projectMapper,
                           TaskMapper taskMapper,
-                          IdempotencyService idempotencyService) {
+                          IdempotentOperationExecutor idempotentOperationExecutor) {
         this.userService = userService;
         this.projectService = projectService;
         this.sprintService = sprintService;
@@ -82,7 +81,7 @@ public class CoreController {
         this.userMapper = userMapper;
         this.projectMapper = projectMapper;
         this.taskMapper = taskMapper;
-        this.idempotencyService = idempotencyService;
+        this.idempotentOperationExecutor = idempotentOperationExecutor;
     }
 
     // ===== USER =====
@@ -285,37 +284,7 @@ public class CoreController {
     @ApiResponse(responseCode = "409", description = "Operation already in progress or business rule violation")
     public IdempotentResultResponse bulkRebalance(@RequestBody @Valid BulkRebalanceRequest req,
                                                   @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
-        if (idempotencyKey != null) {
-            var existing = idempotencyService.reserveOrGetExisting(idempotencyKey, "bulkRebalance");
-            if (existing.isPresent()) {
-                if (existing.get().getResponseCode() == IdempotencyService.RESPONSE_CODE_PROCESSING) {
-                    throw new Exceptions.ConflictException("Idempotent operation is already in progress");
-                }
-                return new IdempotentResultResponse(
-                        existing.get().getOperation(),
-                        idempotencyKey,
-                        true,
-                        existing.get().getResponseBody()
-                );
-            }
-        }
-        try {
-            var ids = sprintOperations.bulkRebalance(req);
-            if (idempotencyKey != null) {
-                idempotencyService.markCompleted(idempotencyKey, 200, ids.toString());
-            }
-            return new IdempotentResultResponse(
-                    "bulkRebalance",
-                    idempotencyKey == null ? "n/a" : idempotencyKey,
-                    false,
-                    ids
-            );
-        } catch (RuntimeException ex) {
-            if (idempotencyKey != null) {
-                idempotencyService.releaseReservation(idempotencyKey);
-            }
-            throw ex;
-        }
+        return idempotentOperationExecutor.execute(idempotencyKey, "bulkRebalance", () -> sprintOperations.bulkRebalance(req));
     }
 
     // ===== mapping helpers =====
