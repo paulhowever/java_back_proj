@@ -31,9 +31,11 @@ public class RiskNotificationService {
         this.eventService = eventService;
     }
 
+    private static final int MAX_OVERDUE_BATCH = 500;
+
     @Transactional
     public void scheduleRiskNotifications() {
-        List<TaskEntity> overdue = taskRepository.findOverdueTasks(Instant.now());
+        List<TaskEntity> overdue = taskRepository.findOldestOverdueNative(Instant.now(), MAX_OVERDUE_BATCH);
         int created = 0;
         for (TaskEntity task : overdue) {
             if (task.getAssignee() == null) {

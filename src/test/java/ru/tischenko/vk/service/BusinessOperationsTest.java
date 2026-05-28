@@ -309,7 +309,7 @@ class BusinessOperationsTest {
         overdue.setTitle("late");
         overdue.setAssignee(assignee);
 
-        when(taskRepository.findOverdueTasks(any())).thenReturn(List.of(overdue));
+        when(taskRepository.findOldestOverdueNative(any(), org.mockito.ArgumentMatchers.anyInt())).thenReturn(List.of(overdue));
         when(notificationRepository.existsByUserIdAndTextAndType(
                 eqLong(8L), any(), eqType(NotificationType.RISK))).thenReturn(true);
 

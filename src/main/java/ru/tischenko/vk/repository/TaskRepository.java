@@ -47,4 +47,16 @@ public interface TaskRepository extends JpaRepository<TaskEntity, Long> {
           and t.status <> ru.tischenko.vk.domain.Enums.TaskStatus.DONE
         """)
     List<TaskEntity> findOverdueTasks(Instant now);
+
+    // Native query: bounded batch for the @Scheduled risk-notification job so a
+    // huge backlog of overdue rows does not load the whole table into one tx.
+    @Query(value = """
+        SELECT * FROM tasks
+        WHERE deadline IS NOT NULL
+          AND deadline < :cutoff
+          AND status <> 'DONE'
+        ORDER BY deadline ASC
+        LIMIT :maxResults
+        """, nativeQuery = true)
+    List<TaskEntity> findOldestOverdueNative(Instant cutoff, int maxResults);
 }
