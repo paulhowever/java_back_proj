@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import ru.tischenko.vk.domain.Enums.TaskStatus;
 import ru.tischenko.vk.domain.TaskEntity;
-import ru.tischenko.vk.repository.Repositories.TaskRepository;
+import ru.tischenko.vk.repository.TaskRepository;
 import ru.tischenko.vk.service.Exceptions;
 
 import java.util.List;

@@ -20,8 +20,18 @@ import ru.tischenko.vk.domain.Enums.UserLevel;
 import ru.tischenko.vk.domain.SubTeamEntity;
 import ru.tischenko.vk.domain.TaskDependencyEntity;
 import ru.tischenko.vk.domain.TeamEntity;
-import ru.tischenko.vk.service.CoreService;
+import ru.tischenko.vk.service.Exceptions;
 import ru.tischenko.vk.service.IdempotencyService;
+import ru.tischenko.vk.service.ProjectService;
+import ru.tischenko.vk.service.SprintService;
+import ru.tischenko.vk.service.SubTeamService;
+import ru.tischenko.vk.service.TaskDependencyService;
+import ru.tischenko.vk.service.TaskService;
+import ru.tischenko.vk.service.TeamService;
+import ru.tischenko.vk.service.UserService;
+import ru.tischenko.vk.service.ops.SprintOperationsService;
+import ru.tischenko.vk.service.ops.TaskOperationsService;
+import ru.tischenko.vk.service.ops.TeamOperationsService;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -31,14 +41,45 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1")
 public class CoreController {
-    private final CoreService service;
+    private final UserService userService;
+    private final ProjectService projectService;
+    private final SprintService sprintService;
+    private final TaskService taskService;
+    private final TeamService teamService;
+    private final SubTeamService subTeamService;
+    private final TaskDependencyService taskDependencyService;
+    private final TeamOperationsService teamOperations;
+    private final TaskOperationsService taskOperations;
+    private final SprintOperationsService sprintOperations;
     private final UserMapper userMapper;
     private final ProjectMapper projectMapper;
     private final TaskMapper taskMapper;
     private final IdempotencyService idempotencyService;
 
-    public CoreController(CoreService service, UserMapper userMapper, ProjectMapper projectMapper, TaskMapper taskMapper, IdempotencyService idempotencyService) {
-        this.service = service;
+    public CoreController(UserService userService,
+                          ProjectService projectService,
+                          SprintService sprintService,
+                          TaskService taskService,
+                          TeamService teamService,
+                          SubTeamService subTeamService,
+                          TaskDependencyService taskDependencyService,
+                          TeamOperationsService teamOperations,
+                          TaskOperationsService taskOperations,
+                          SprintOperationsService sprintOperations,
+                          UserMapper userMapper,
+                          ProjectMapper projectMapper,
+                          TaskMapper taskMapper,
+                          IdempotencyService idempotencyService) {
+        this.userService = userService;
+        this.projectService = projectService;
+        this.sprintService = sprintService;
+        this.taskService = taskService;
+        this.teamService = teamService;
+        this.subTeamService = subTeamService;
+        this.taskDependencyService = taskDependencyService;
+        this.teamOperations = teamOperations;
+        this.taskOperations = taskOperations;
+        this.sprintOperations = sprintOperations;
         this.userMapper = userMapper;
         this.projectMapper = projectMapper;
         this.taskMapper = taskMapper;
@@ -53,24 +94,24 @@ public class CoreController {
     @Operation(summary = "Create user")
     @ApiResponse(responseCode = "201", description = "User created")
     @ApiResponse(responseCode = "409", description = "User conflict")
-    public UserResponse createUser(@RequestBody @Valid UserRequest req) { return userMapper.toResponse(service.createUser(req)); }
+    public UserResponse createUser(@RequestBody @Valid UserRequest req) { return userMapper.toResponse(userService.createUser(req)); }
 
     @GetMapping("/users/{id}") @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public UserResponse getUser(@PathVariable Long id) { return userMapper.toResponse(service.getUser(id)); }
+    public UserResponse getUser(@PathVariable Long id) { return userMapper.toResponse(userService.getUser(id)); }
 
     @PutMapping("/users/{id}") @PreAuthorize("hasRole('ADMIN')")
-    public UserResponse updateUser(@PathVariable Long id, @RequestBody @Valid UserRequest req) { return userMapper.toResponse(service.updateUser(id, req)); }
+    public UserResponse updateUser(@PathVariable Long id, @RequestBody @Valid UserRequest req) { return userMapper.toResponse(userService.updateUser(id, req)); }
 
     @DeleteMapping("/users/{id}") @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteUser(@PathVariable Long id) { service.deleteUser(id); }
+    public void deleteUser(@PathVariable Long id) { userService.deleteUser(id); }
 
     @GetMapping("/users") @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "List users with filters (role, level, enabled)")
     public Page<UserResponse> listUsers(@RequestParam(required = false) Role role,
                                         @RequestParam(required = false) UserLevel level,
                                         @RequestParam(required = false) Boolean enabled,
-                                        Pageable pageable) { return service.listUsers(role, level, enabled, pageable).map(userMapper::toResponse); }
+                                        Pageable pageable) { return userService.listUsers(role, level, enabled, pageable).map(userMapper::toResponse); }
 
     // ===== PROJECT =====
 
@@ -78,17 +119,17 @@ public class CoreController {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create project")
     @ApiResponse(responseCode = "201", description = "Project created")
-    public ProjectResponse createProject(@RequestBody @Valid ProjectRequest req) { return projectMapper.toResponse(service.createProject(req)); }
+    public ProjectResponse createProject(@RequestBody @Valid ProjectRequest req) { return projectMapper.toResponse(projectService.createProject(req)); }
 
     @GetMapping("/projects/{id}") @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public ProjectResponse getProject(@PathVariable Long id) { return projectMapper.toResponse(service.getProject(id)); }
+    public ProjectResponse getProject(@PathVariable Long id) { return projectMapper.toResponse(projectService.getProject(id)); }
 
     @PutMapping("/projects/{id}") @PreAuthorize("hasRole('ADMIN')")
-    public ProjectResponse updateProject(@PathVariable Long id, @RequestBody @Valid ProjectRequest req) { return projectMapper.toResponse(service.updateProject(id, req)); }
+    public ProjectResponse updateProject(@PathVariable Long id, @RequestBody @Valid ProjectRequest req) { return projectMapper.toResponse(projectService.updateProject(id, req)); }
 
     @DeleteMapping("/projects/{id}") @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteProject(@PathVariable Long id) { service.deleteProject(id); }
+    public void deleteProject(@PathVariable Long id) { projectService.deleteProject(id); }
 
     @GetMapping("/projects") @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @Operation(summary = "List projects with filters (status, startDate range, name)")
@@ -96,7 +137,7 @@ public class CoreController {
                                               @RequestParam(required = false) LocalDate startDateFrom,
                                               @RequestParam(required = false) LocalDate startDateTo,
                                               @RequestParam(required = false) String nameContains,
-                                              Pageable pageable) { return service.listProjects(status, startDateFrom, startDateTo, nameContains, pageable).map(projectMapper::toResponse); }
+                                              Pageable pageable) { return projectService.listProjects(status, startDateFrom, startDateTo, nameContains, pageable).map(projectMapper::toResponse); }
 
     // ===== TASK =====
 
@@ -104,46 +145,46 @@ public class CoreController {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create task")
     @ApiResponse(responseCode = "201", description = "Task created")
-    public TaskResponse createTask(@RequestBody @Valid TaskRequest req) { return taskMapper.toResponse(service.createTask(req)); }
+    public TaskResponse createTask(@RequestBody @Valid TaskRequest req) { return taskMapper.toResponse(taskService.createTask(req)); }
 
     @GetMapping("/tasks/{id}") @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public TaskResponse getTask(@PathVariable Long id) { return taskMapper.toResponse(service.getTask(id)); }
+    public TaskResponse getTask(@PathVariable Long id) { return taskMapper.toResponse(taskService.getTask(id)); }
 
     @PutMapping("/tasks/{id}") @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public TaskResponse updateTask(@PathVariable Long id, @RequestBody @Valid TaskRequest req) { return taskMapper.toResponse(service.updateTask(id, req)); }
+    public TaskResponse updateTask(@PathVariable Long id, @RequestBody @Valid TaskRequest req) { return taskMapper.toResponse(taskService.updateTask(id, req)); }
 
     @DeleteMapping("/tasks/{id}") @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteTask(@PathVariable Long id) { service.deleteTask(id); }
+    public void deleteTask(@PathVariable Long id) { taskService.deleteTask(id); }
 
     @GetMapping("/tasks") @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public Page<TaskResponse> listTasks(@RequestParam(required = false) TaskStatus status,
                                         @RequestParam(required = false) Long assigneeId,
                                         @RequestParam(required = false) TaskPriority priority,
-                                        Pageable pageable) { return service.listTasks(status, assigneeId, priority, pageable).map(taskMapper::toResponse); }
+                                        Pageable pageable) { return taskService.listTasks(status, assigneeId, priority, pageable).map(taskMapper::toResponse); }
 
     // ===== TEAM CRUD =====
 
     @PostMapping("/teams") @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create team")
-    public TeamResponse createTeam(@RequestBody @Valid TeamRequest req) { return toTeamResponse(service.createTeam(req)); }
+    public TeamResponse createTeam(@RequestBody @Valid TeamRequest req) { return toTeamResponse(teamService.createTeam(req)); }
 
     @GetMapping("/teams/{id}") @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public TeamResponse getTeam(@PathVariable Long id) { return toTeamResponse(service.getTeamWithMembers(id)); }
+    public TeamResponse getTeam(@PathVariable Long id) { return toTeamResponse(teamService.getTeamWithMembers(id)); }
 
     @DeleteMapping("/teams/{id}") @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteTeam(@PathVariable Long id) { service.deleteTeam(id); }
+    public void deleteTeam(@PathVariable Long id) { teamService.deleteTeam(id); }
 
     @GetMapping("/teams") @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public Page<TeamResponse> listTeams(@RequestParam(required = false) Long projectId, Pageable pageable) {
-        return service.listTeamsWithMembers(projectId, pageable).map(this::toTeamResponse);
+        return teamService.listTeamsWithMembers(projectId, pageable).map(this::toTeamResponse);
     }
 
     @PutMapping("/teams/{id}/members") @PreAuthorize("hasRole('ADMIN')")
     public TeamResponse setTeamMembers(@PathVariable Long id, @RequestBody @Valid TeamMembersRequest req) {
-        return toTeamResponse(service.setTeamMembers(id, req.userIds()));
+        return toTeamResponse(teamService.setTeamMembers(id, req.userIds()));
     }
 
     // ===== SUBTEAM CRUD =====
@@ -151,18 +192,18 @@ public class CoreController {
     @PostMapping("/subteams") @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create sub-team")
-    public SubTeamResponse createSubTeam(@RequestBody @Valid SubTeamRequest req) { return toSubTeamResponse(service.createSubTeam(req)); }
+    public SubTeamResponse createSubTeam(@RequestBody @Valid SubTeamRequest req) { return toSubTeamResponse(subTeamService.createSubTeam(req)); }
 
     @GetMapping("/subteams/{id}") @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public SubTeamResponse getSubTeam(@PathVariable Long id) { return toSubTeamResponse(service.getSubTeamWithMembers(id)); }
+    public SubTeamResponse getSubTeam(@PathVariable Long id) { return toSubTeamResponse(subTeamService.getSubTeamWithMembers(id)); }
 
     @DeleteMapping("/subteams/{id}") @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteSubTeam(@PathVariable Long id) { service.deleteSubTeam(id); }
+    public void deleteSubTeam(@PathVariable Long id) { subTeamService.deleteSubTeam(id); }
 
     @GetMapping("/subteams") @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public Page<SubTeamResponse> listSubTeams(@RequestParam(required = false) Long teamId, Pageable pageable) {
-        return service.listSubTeamsWithMembers(teamId, pageable).map(this::toSubTeamResponse);
+        return subTeamService.listSubTeamsWithMembers(teamId, pageable).map(this::toSubTeamResponse);
     }
 
     // ===== SPRINT CRUD =====
@@ -172,21 +213,21 @@ public class CoreController {
     @Operation(summary = "Create sprint (duration must be 1..3 days)")
     @ApiResponse(responseCode = "201", description = "Sprint created")
     @ApiResponse(responseCode = "409", description = "Sprint duration violation")
-    public SprintResponse createSprint(@RequestBody @Valid SprintRequest req) { return toSprintResponse(service.createSprint(req)); }
+    public SprintResponse createSprint(@RequestBody @Valid SprintRequest req) { return toSprintResponse(sprintService.createSprint(req)); }
 
     @GetMapping("/sprints/{id}") @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public SprintResponse getSprint(@PathVariable Long id) { return toSprintResponse(service.getSprint(id)); }
+    public SprintResponse getSprint(@PathVariable Long id) { return toSprintResponse(sprintService.getSprint(id)); }
 
     @PutMapping("/sprints/{id}") @PreAuthorize("hasRole('ADMIN')")
-    public SprintResponse updateSprint(@PathVariable Long id, @RequestBody @Valid SprintRequest req) { return toSprintResponse(service.updateSprint(id, req)); }
+    public SprintResponse updateSprint(@PathVariable Long id, @RequestBody @Valid SprintRequest req) { return toSprintResponse(sprintService.updateSprint(id, req)); }
 
     @DeleteMapping("/sprints/{id}") @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteSprint(@PathVariable Long id) { service.deleteSprint(id); }
+    public void deleteSprint(@PathVariable Long id) { sprintService.deleteSprint(id); }
 
     @GetMapping("/sprints") @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public Page<SprintResponse> listSprints(@RequestParam(required = false) Long projectId, Pageable pageable) {
-        return service.listSprints(projectId, pageable).map(this::toSprintResponse);
+        return sprintService.listSprints(projectId, pageable).map(this::toSprintResponse);
     }
 
     // ===== TASK DEPENDENCY CRUD =====
@@ -195,16 +236,16 @@ public class CoreController {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create task dependency")
     public TaskDependencyResponse createDependency(@RequestBody @Valid TaskDependencyRequest req) {
-        return toDependencyResponse(service.createTaskDependency(req));
+        return toDependencyResponse(taskDependencyService.createTaskDependency(req));
     }
 
     @DeleteMapping("/task-dependencies/{id}") @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteDependency(@PathVariable Long id) { service.deleteTaskDependency(id); }
+    public void deleteDependency(@PathVariable Long id) { taskDependencyService.deleteTaskDependency(id); }
 
     @GetMapping("/task-dependencies") @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public Page<TaskDependencyResponse> listDependencies(Pageable pageable) {
-        return service.listTaskDependencies(pageable).map(this::toDependencyResponse);
+        return taskDependencyService.listTaskDependencies(pageable).map(this::toDependencyResponse);
     }
 
     // ===== BUSINESS OPS =====
@@ -212,32 +253,32 @@ public class CoreController {
     @PostMapping("/business/subteam/assign") @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Assign users to sub-team (warns if no lead)")
     public AssignSubTeamResponse assignSubTeam(@RequestBody @Valid AssignSubTeamRequest req) {
-        var result = service.assignUsersToSubTeam(req);
+        var result = teamOperations.assignUsersToSubTeam(req);
         return new AssignSubTeamResponse(result.hasLead(), result.warningNotificationId());
     }
 
     @GetMapping("/business/team/{teamId}/analysis") @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public AnalyzeTeamResponse analyzeTeam(@PathVariable Long teamId) { return service.analyzeTeam(teamId); }
+    public AnalyzeTeamResponse analyzeTeam(@PathVariable Long teamId) { return teamOperations.analyzeTeam(teamId); }
 
     @PostMapping("/business/task/start") @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @Operation(summary = "Start task with business checks")
     @ApiResponse(responseCode = "200", description = "Task moved to IN_PROGRESS")
     @ApiResponse(responseCode = "409", description = "Business rule violation")
-    public TaskResponse startTask(@RequestBody @Valid StartTaskRequest req) { return taskMapper.toResponse(service.startTask(req)); }
+    public TaskResponse startTask(@RequestBody @Valid StartTaskRequest req) { return taskMapper.toResponse(taskOperations.startTask(req)); }
 
     @GetMapping("/business/sprint/{sprintId}/critical-tasks") @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public CriticalTaskResponse criticalTasks(@PathVariable Long sprintId) { return service.findCriticalTasks(sprintId); }
+    public CriticalTaskResponse criticalTasks(@PathVariable Long sprintId) { return taskOperations.findCriticalTasks(sprintId); }
 
     @PostMapping("/business/sprint/escalate-critical") @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Auto-escalate priority for tasks that block N+ others in sprint")
     @ApiResponse(responseCode = "200", description = "Returns ids of escalated tasks")
     public CriticalEscalationResponse escalateCritical(@RequestBody @Valid EscalateCriticalRequest req) {
-        return service.escalateCriticalTasks(req.sprintId());
+        return taskOperations.escalateCriticalTasks(req.sprintId());
     }
 
     @PostMapping("/business/sprint/complete") @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Complete sprint: marks DONE, emits notifications for unfinished tasks")
-    public Map<String, Object> completeSprint(@RequestBody @Valid CompleteSprintRequest req) { return service.completeSprint(req); }
+    public Map<String, Object> completeSprint(@RequestBody @Valid CompleteSprintRequest req) { return sprintOperations.completeSprint(req); }
 
     @PostMapping("/business/sprint/bulk-rebalance") @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Bulk rebalance sprint tasks across project team members (idempotent via Idempotency-Key header)")
@@ -249,7 +290,7 @@ public class CoreController {
             var existing = idempotencyService.reserveOrGetExisting(idempotencyKey, "bulkRebalance");
             if (existing.isPresent()) {
                 if (existing.get().getResponseCode() == IdempotencyService.RESPONSE_CODE_PROCESSING) {
-                    throw new ru.tischenko.vk.service.Exceptions.ConflictException("Idempotent operation is already in progress");
+                    throw new Exceptions.ConflictException("Idempotent operation is already in progress");
                 }
                 return new IdempotentResultResponse(
                         existing.get().getOperation(),
@@ -260,7 +301,7 @@ public class CoreController {
             }
         }
         try {
-            var ids = service.bulkRebalance(req);
+            var ids = sprintOperations.bulkRebalance(req);
             if (idempotencyKey != null) {
                 idempotencyService.markCompleted(idempotencyKey, 200, ids.toString());
             }

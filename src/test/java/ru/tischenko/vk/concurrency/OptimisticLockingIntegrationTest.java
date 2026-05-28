@@ -10,9 +10,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import ru.tischenko.vk.domain.*;
 import ru.tischenko.vk.domain.Enums.*;
-import ru.tischenko.vk.repository.Repositories.SprintRepository;
-import ru.tischenko.vk.repository.Repositories.TaskRepository;
-import ru.tischenko.vk.repository.Repositories.ProjectRepository;
+import ru.tischenko.vk.repository.SprintRepository;
+import ru.tischenko.vk.repository.TaskRepository;
+import ru.tischenko.vk.repository.ProjectRepository;
 
 import java.time.LocalDate;
 

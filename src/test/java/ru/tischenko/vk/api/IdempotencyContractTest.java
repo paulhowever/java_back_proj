@@ -6,8 +6,17 @@ import ru.tischenko.vk.api.mapper.ApiMappers.ProjectMapper;
 import ru.tischenko.vk.api.mapper.ApiMappers.TaskMapper;
 import ru.tischenko.vk.api.mapper.ApiMappers.UserMapper;
 import ru.tischenko.vk.domain.IdempotencyRecordEntity;
-import ru.tischenko.vk.service.CoreService;
 import ru.tischenko.vk.service.IdempotencyService;
+import ru.tischenko.vk.service.ProjectService;
+import ru.tischenko.vk.service.SprintService;
+import ru.tischenko.vk.service.SubTeamService;
+import ru.tischenko.vk.service.TaskDependencyService;
+import ru.tischenko.vk.service.TaskService;
+import ru.tischenko.vk.service.TeamService;
+import ru.tischenko.vk.service.UserService;
+import ru.tischenko.vk.service.ops.SprintOperationsService;
+import ru.tischenko.vk.service.ops.TaskOperationsService;
+import ru.tischenko.vk.service.ops.TeamOperationsService;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,15 +30,30 @@ import static org.mockito.Mockito.*;
 
 class IdempotencyContractTest {
 
+    private static CoreController buildController(SprintOperationsService sprintOps, IdempotencyService idempotencyService) {
+        return new CoreController(
+                mock(UserService.class),
+                mock(ProjectService.class),
+                mock(SprintService.class),
+                mock(TaskService.class),
+                mock(TeamService.class),
+                mock(SubTeamService.class),
+                mock(TaskDependencyService.class),
+                mock(TeamOperationsService.class),
+                mock(TaskOperationsService.class),
+                sprintOps,
+                mock(UserMapper.class),
+                mock(ProjectMapper.class),
+                mock(TaskMapper.class),
+                idempotencyService
+        );
+    }
+
     @Test
     void shouldReturnUnifiedReplayResponseWhenKeyAlreadyExists() {
-        CoreService coreService = mock(CoreService.class);
+        SprintOperationsService sprintOps = mock(SprintOperationsService.class);
         IdempotencyService idempotencyService = mock(IdempotencyService.class);
-        UserMapper userMapper = mock(UserMapper.class);
-        ProjectMapper projectMapper = mock(ProjectMapper.class);
-        TaskMapper taskMapper = mock(TaskMapper.class);
-
-        CoreController controller = new CoreController(coreService, userMapper, projectMapper, taskMapper, idempotencyService);
+        CoreController controller = buildController(sprintOps, idempotencyService);
 
         IdempotencyRecordEntity record = new IdempotencyRecordEntity();
         record.setIdempotencyKey("key-1");
@@ -44,21 +68,17 @@ class IdempotencyContractTest {
         assertEquals("key-1", response.idempotencyKey());
         assertEquals("[1,2,3]", response.payload());
         assertEquals("bulkRebalance", response.operation());
-        verify(coreService, never()).bulkRebalance(any());
+        verify(sprintOps, never()).bulkRebalance(any());
     }
 
     @Test
     void shouldReturnUnifiedFreshResponseWhenKeyIsNew() {
-        CoreService coreService = mock(CoreService.class);
+        SprintOperationsService sprintOps = mock(SprintOperationsService.class);
         IdempotencyService idempotencyService = mock(IdempotencyService.class);
-        UserMapper userMapper = mock(UserMapper.class);
-        ProjectMapper projectMapper = mock(ProjectMapper.class);
-        TaskMapper taskMapper = mock(TaskMapper.class);
-
-        CoreController controller = new CoreController(coreService, userMapper, projectMapper, taskMapper, idempotencyService);
+        CoreController controller = buildController(sprintOps, idempotencyService);
 
         when(idempotencyService.reserveOrGetExisting("key-2", "bulkRebalance")).thenReturn(Optional.empty());
-        when(coreService.bulkRebalance(any())).thenReturn(List.of(5L, 6L));
+        when(sprintOps.bulkRebalance(any())).thenReturn(List.of(5L, 6L));
 
         var response = controller.bulkRebalance(new BulkRebalanceRequest(2L), "key-2");
 
@@ -71,13 +91,9 @@ class IdempotencyContractTest {
 
     @Test
     void shouldReturn409WhenExistingReservationIsStillProcessing() {
-        CoreService coreService = mock(CoreService.class);
+        SprintOperationsService sprintOps = mock(SprintOperationsService.class);
         IdempotencyService idempotencyService = mock(IdempotencyService.class);
-        UserMapper userMapper = mock(UserMapper.class);
-        ProjectMapper projectMapper = mock(ProjectMapper.class);
-        TaskMapper taskMapper = mock(TaskMapper.class);
-
-        CoreController controller = new CoreController(coreService, userMapper, projectMapper, taskMapper, idempotencyService);
+        CoreController controller = buildController(sprintOps, idempotencyService);
 
         IdempotencyRecordEntity record = new IdempotencyRecordEntity();
         record.setIdempotencyKey("key-x");
@@ -88,21 +104,17 @@ class IdempotencyContractTest {
 
         assertThrows(ru.tischenko.vk.service.Exceptions.ConflictException.class,
                 () -> controller.bulkRebalance(new BulkRebalanceRequest(1L), "key-x"));
-        verify(coreService, never()).bulkRebalance(any());
+        verify(sprintOps, never()).bulkRebalance(any());
     }
 
     @Test
     void shouldReleaseReservationWhenBusinessOperationFails() {
-        CoreService coreService = mock(CoreService.class);
+        SprintOperationsService sprintOps = mock(SprintOperationsService.class);
         IdempotencyService idempotencyService = mock(IdempotencyService.class);
-        UserMapper userMapper = mock(UserMapper.class);
-        ProjectMapper projectMapper = mock(ProjectMapper.class);
-        TaskMapper taskMapper = mock(TaskMapper.class);
-
-        CoreController controller = new CoreController(coreService, userMapper, projectMapper, taskMapper, idempotencyService);
+        CoreController controller = buildController(sprintOps, idempotencyService);
 
         when(idempotencyService.reserveOrGetExisting("key-3", "bulkRebalance")).thenReturn(Optional.empty());
-        when(coreService.bulkRebalance(any())).thenThrow(new RuntimeException("boom"));
+        when(sprintOps.bulkRebalance(any())).thenThrow(new RuntimeException("boom"));
 
         assertThrows(RuntimeException.class, () -> controller.bulkRebalance(new BulkRebalanceRequest(3L), "key-3"));
         verify(idempotencyService).releaseReservation("key-3");

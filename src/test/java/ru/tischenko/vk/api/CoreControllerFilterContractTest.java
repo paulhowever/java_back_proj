@@ -11,8 +11,17 @@ import ru.tischenko.vk.api.mapper.ApiMappers.UserMapper;
 import ru.tischenko.vk.domain.Enums;
 import ru.tischenko.vk.domain.ProjectEntity;
 import ru.tischenko.vk.domain.UserEntity;
-import ru.tischenko.vk.service.CoreService;
 import ru.tischenko.vk.service.IdempotencyService;
+import ru.tischenko.vk.service.ProjectService;
+import ru.tischenko.vk.service.SprintService;
+import ru.tischenko.vk.service.SubTeamService;
+import ru.tischenko.vk.service.TaskDependencyService;
+import ru.tischenko.vk.service.TaskService;
+import ru.tischenko.vk.service.TeamService;
+import ru.tischenko.vk.service.UserService;
+import ru.tischenko.vk.service.ops.SprintOperationsService;
+import ru.tischenko.vk.service.ops.TaskOperationsService;
+import ru.tischenko.vk.service.ops.TeamOperationsService;
 
 import java.time.LocalDate;
 
@@ -23,15 +32,18 @@ class CoreControllerFilterContractTest {
 
     @Test
     void listUsersShouldSupportRoleLevelEnabledFilters() {
-        CoreService service = mock(CoreService.class);
+        UserService userService = mock(UserService.class);
         UserMapper userMapper = mock(UserMapper.class);
-        ProjectMapper projectMapper = mock(ProjectMapper.class);
-        TaskMapper taskMapper = mock(TaskMapper.class);
-        IdempotencyService idempotencyService = mock(IdempotencyService.class);
-        CoreController controller = new CoreController(service, userMapper, projectMapper, taskMapper, idempotencyService);
+        CoreController controller = new CoreController(
+                userService,
+                mock(ProjectService.class), mock(SprintService.class), mock(TaskService.class),
+                mock(TeamService.class), mock(SubTeamService.class), mock(TaskDependencyService.class),
+                mock(TeamOperationsService.class), mock(TaskOperationsService.class), mock(SprintOperationsService.class),
+                userMapper, mock(ProjectMapper.class), mock(TaskMapper.class), mock(IdempotencyService.class)
+        );
 
         UserEntity entity = new UserEntity();
-        when(service.listUsers(eq(Enums.Role.ADMIN), eq(Enums.UserLevel.LEAD), eq(true), any()))
+        when(userService.listUsers(eq(Enums.Role.ADMIN), eq(Enums.UserLevel.LEAD), eq(true), any()))
                 .thenReturn(new PageImpl<>(java.util.List.of(entity), PageRequest.of(0, 10), 1));
         when(userMapper.toResponse(entity)).thenReturn(new UserResponse(1L, "a@a", Enums.Role.ADMIN, Enums.UserLevel.LEAD));
 
@@ -41,15 +53,19 @@ class CoreControllerFilterContractTest {
 
     @Test
     void listProjectsShouldSupportDateAndNameFilters() {
-        CoreService service = mock(CoreService.class);
-        UserMapper userMapper = mock(UserMapper.class);
+        ProjectService projectService = mock(ProjectService.class);
         ProjectMapper projectMapper = mock(ProjectMapper.class);
-        TaskMapper taskMapper = mock(TaskMapper.class);
-        IdempotencyService idempotencyService = mock(IdempotencyService.class);
-        CoreController controller = new CoreController(service, userMapper, projectMapper, taskMapper, idempotencyService);
+        CoreController controller = new CoreController(
+                mock(UserService.class),
+                projectService,
+                mock(SprintService.class), mock(TaskService.class),
+                mock(TeamService.class), mock(SubTeamService.class), mock(TaskDependencyService.class),
+                mock(TeamOperationsService.class), mock(TaskOperationsService.class), mock(SprintOperationsService.class),
+                mock(UserMapper.class), projectMapper, mock(TaskMapper.class), mock(IdempotencyService.class)
+        );
 
         ProjectEntity entity = new ProjectEntity();
-        when(service.listProjects(eq(Enums.ProjectStatus.ACTIVE), eq(LocalDate.parse("2026-01-01")), eq(LocalDate.parse("2026-01-31")), eq("team"), any()))
+        when(projectService.listProjects(eq(Enums.ProjectStatus.ACTIVE), eq(LocalDate.parse("2026-01-01")), eq(LocalDate.parse("2026-01-31")), eq("team"), any()))
                 .thenReturn(new PageImpl<>(java.util.List.of(entity), PageRequest.of(0, 10), 1));
         when(projectMapper.toResponse(entity)).thenReturn(new ProjectResponse(1L, "Team", LocalDate.parse("2026-01-01"), LocalDate.parse("2026-01-14"), Enums.ProjectStatus.ACTIVE));
 

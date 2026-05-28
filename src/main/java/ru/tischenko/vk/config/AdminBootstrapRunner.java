@@ -10,7 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import ru.tischenko.vk.domain.Enums.Role;
 import ru.tischenko.vk.domain.Enums.UserLevel;
 import ru.tischenko.vk.domain.UserEntity;
-import ru.tischenko.vk.repository.Repositories.UserRepository;
+import ru.tischenko.vk.repository.UserRepository;
 
 @Configuration
 public class AdminBootstrapRunner {

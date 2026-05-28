@@ -3,7 +3,7 @@ package ru.tischenko.vk.config;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Component;
-import ru.tischenko.vk.repository.Repositories.TaskRepository;
+import ru.tischenko.vk.repository.TaskRepository;
 
 @Component
 public class RiskHealthIndicator implements HealthIndicator {

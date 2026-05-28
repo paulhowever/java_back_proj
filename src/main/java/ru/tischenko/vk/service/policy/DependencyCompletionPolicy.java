@@ -3,7 +3,7 @@ package ru.tischenko.vk.service.policy;
 import org.springframework.stereotype.Component;
 import ru.tischenko.vk.domain.Enums.TaskStatus;
 import ru.tischenko.vk.domain.TaskEntity;
-import ru.tischenko.vk.repository.Repositories.TaskDependencyRepository;
+import ru.tischenko.vk.repository.TaskDependencyRepository;
 import ru.tischenko.vk.service.Exceptions;
 
 @Component

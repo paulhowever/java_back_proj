@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import ru.tischenko.vk.domain.Enums.DeliveryStatus;
-import ru.tischenko.vk.repository.Repositories.NotificationRepository;
+import ru.tischenko.vk.repository.NotificationRepository;
 
 @Component
 public class NotificationHandlers {

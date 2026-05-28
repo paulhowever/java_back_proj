@@ -6,7 +6,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import ru.tischenko.vk.repository.Repositories.UserRepository;
+import ru.tischenko.vk.repository.UserRepository;
 
 import java.util.List;
 

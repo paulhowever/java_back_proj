@@ -10,7 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import ru.tischenko.vk.domain.*;
 import ru.tischenko.vk.domain.Enums.*;
-import ru.tischenko.vk.repository.Repositories.TaskRepository;
+import ru.tischenko.vk.repository.TaskRepository;
 
 import java.time.LocalDate;
 

@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import ru.tischenko.vk.domain.IdempotencyRecordEntity;
-import ru.tischenko.vk.repository.Repositories.IdempotencyRecordRepository;
+import ru.tischenko.vk.repository.IdempotencyRecordRepository;
 
 import java.util.Optional;
 
