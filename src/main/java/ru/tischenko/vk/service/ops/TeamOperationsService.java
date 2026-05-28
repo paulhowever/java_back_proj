@@ -48,10 +48,10 @@ public class TeamOperationsService {
         this.eventService = eventService;
     }
 
-    public record AssignSubTeamResultLog(boolean hasLead, Long warningNotificationId) {}
+    public record AssignSubTeamResult(boolean hasLead, Long warningNotificationId) {}
 
     @Transactional
-    public AssignSubTeamResultLog assignUsersToSubTeam(AssignSubTeamRequest req) {
+    public AssignSubTeamResult assignUsersToSubTeam(AssignSubTeamRequest req) {
         SubTeamEntity subTeam = subTeamRepository.findById(req.subTeamId())
                 .orElseThrow(() -> new Exceptions.NotFoundException("SubTeam not found"));
         List<UserEntity> users = userRepository.findAllById(req.userIds());
@@ -63,6 +63,10 @@ public class TeamOperationsService {
         boolean hasLead = users.stream().anyMatch(u -> u.getLevel() == UserLevel.LEAD);
         Long warningNotificationId = null;
         if (!hasLead && !users.isEmpty()) {
+            // The "no lead" warning is sent to the first member in the request order.
+            // Domain rule: sub-team has no PM/Owner field, so we have no canonical recipient;
+            // notifying the first listed member follows the "whoever is at the top of the list
+            // gets the heads-up" convention used by the team-coord product.
             NotificationEntity n = new NotificationEntity();
             n.setUser(users.get(0));
             n.setType(NotificationType.WARNING);
@@ -73,7 +77,7 @@ public class TeamOperationsService {
             eventService.publishNotificationCreated(n.getId());
         }
         log.info("assignUsersToSubTeam subTeamId={} users={} hasLead={}", req.subTeamId(), req.userIds().size(), hasLead);
-        return new AssignSubTeamResultLog(hasLead, warningNotificationId);
+        return new AssignSubTeamResult(hasLead, warningNotificationId);
     }
 
     @Transactional(readOnly = true)

@@ -57,6 +57,7 @@ public class ProjectService {
         projectRepository.delete(getProject(id));
     }
 
+    @Transactional(readOnly = true)
     public Page<ProjectEntity> listProjects(ProjectStatus status, LocalDate startDateFrom, LocalDate startDateTo, String nameContains, Pageable pageable) {
         String normalisedName = (nameContains == null || nameContains.isBlank()) ? "" : nameContains.trim();
         return projectRepository.search(status, startDateFrom, startDateTo, normalisedName, pageable);

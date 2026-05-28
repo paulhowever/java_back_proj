@@ -34,6 +34,7 @@ public class SubTeamService {
         }
     }
 
+    @Transactional(readOnly = true)
     public SubTeamEntity getSubTeam(Long id) {
         return subTeamRepository.findById(id).orElseThrow(() -> new Exceptions.NotFoundException("SubTeam not found"));
     }
@@ -50,6 +51,7 @@ public class SubTeamService {
         subTeamRepository.delete(getSubTeam(id));
     }
 
+    @Transactional(readOnly = true)
     public Page<SubTeamEntity> listSubTeams(Long teamId, Pageable pageable) {
         return teamId == null ? subTeamRepository.findAll(pageable) : subTeamRepository.findByTeamId(teamId, pageable);
     }

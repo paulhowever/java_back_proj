@@ -33,6 +33,7 @@ public class SprintService {
         return sprintRepository.save(s);
     }
 
+    @Transactional(readOnly = true)
     public SprintEntity getSprint(Long id) {
         return sprintRepository.findById(id).orElseThrow(() -> new Exceptions.NotFoundException("Sprint not found"));
     }
@@ -53,6 +54,7 @@ public class SprintService {
         sprintRepository.delete(getSprint(id));
     }
 
+    @Transactional(readOnly = true)
     public Page<SprintEntity> listSprints(Long projectId, Pageable pageable) {
         return projectId == null ? sprintRepository.findAll(pageable) : sprintRepository.findByProjectId(projectId, pageable);
     }

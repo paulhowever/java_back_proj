@@ -90,7 +90,8 @@ public class TaskOperationsService {
             long blocks = blockerCounts.getOrDefault(t.getId(), 0L);
             if (blocks >= criticalBlockerThreshold && t.getPriority() != TaskPriority.CRITICAL) {
                 t.setPriority(TaskPriority.CRITICAL);
-                taskRepository.save(t);
+                // t is a managed entity from findBySprintId — Hibernate dirty-checking
+                // flushes the priority change on commit, no explicit save needed.
                 escalated.add(t.getId());
             }
         }

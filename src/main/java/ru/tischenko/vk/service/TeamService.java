@@ -39,6 +39,7 @@ public class TeamService {
         }
     }
 
+    @Transactional(readOnly = true)
     public TeamEntity getTeam(Long id) {
         return teamRepository.findById(id).orElseThrow(() -> new Exceptions.NotFoundException("Team not found"));
     }
@@ -55,6 +56,7 @@ public class TeamService {
         teamRepository.delete(getTeam(id));
     }
 
+    @Transactional(readOnly = true)
     public Page<TeamEntity> listTeams(Long projectId, Pageable pageable) {
         return projectId == null ? teamRepository.findAll(pageable) : teamRepository.findByProjectId(projectId, pageable);
     }

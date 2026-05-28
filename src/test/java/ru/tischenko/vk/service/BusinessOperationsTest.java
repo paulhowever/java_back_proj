@@ -223,8 +223,8 @@ class BusinessOperationsTest {
         assertEquals(List.of(100L), resp.escalatedTaskIds());
         assertEquals(TaskPriority.CRITICAL, blocker.getPriority());
         assertEquals(TaskPriority.LOW, other.getPriority());
-        verify(taskRepository).save(blocker);
-        verify(taskRepository, never()).save(other);
+        // Managed-entity mutation: dirty-checking flushes on commit, no explicit save expected.
+        verify(taskRepository, never()).save(any());
     }
 
     @Test

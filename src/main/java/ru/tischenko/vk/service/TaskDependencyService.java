@@ -44,6 +44,7 @@ public class TaskDependencyService {
         taskDependencyRepository.delete(dep);
     }
 
+    @Transactional(readOnly = true)
     public Page<TaskDependencyEntity> listTaskDependencies(Pageable pageable) {
         return taskDependencyRepository.findAll(pageable);
     }

@@ -36,6 +36,7 @@ public class UserService {
         }
     }
 
+    @Transactional(readOnly = true)
     public UserEntity getUser(Long id) {
         return userRepository.findById(id).orElseThrow(() -> new Exceptions.NotFoundException("User not found"));
     }
@@ -61,6 +62,7 @@ public class UserService {
         userRepository.delete(getUser(id));
     }
 
+    @Transactional(readOnly = true)
     public Page<UserEntity> listUsers(Role role, UserLevel level, Boolean enabled, Pageable pageable) {
         return userRepository.search(role, level, enabled, pageable);
     }

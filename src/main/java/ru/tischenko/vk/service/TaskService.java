@@ -38,6 +38,7 @@ public class TaskService {
         return taskRepository.save(e);
     }
 
+    @Transactional(readOnly = true)
     public TaskEntity getTask(Long id) {
         return taskRepository.findById(id).orElseThrow(() -> new Exceptions.NotFoundException("Task not found"));
     }
@@ -64,6 +65,7 @@ public class TaskService {
         taskRepository.delete(getTask(id));
     }
 
+    @Transactional(readOnly = true)
     public Page<TaskEntity> listTasks(TaskStatus status, Long assigneeId, TaskPriority priority, Pageable pageable) {
         return taskRepository.search(status, assigneeId, priority, pageable);
     }
