@@ -34,6 +34,7 @@ public class ProjectService {
         return projectRepository.save(e);
     }
 
+    @Transactional(readOnly = true)
     @Cacheable(value = "projects", key = "#id")
     public ProjectEntity getProject(Long id) {
         return projectRepository.findById(id).orElseThrow(() -> new Exceptions.NotFoundException("Project not found"));

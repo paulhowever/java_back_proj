@@ -40,7 +40,7 @@ public final class Dtos {
             @Min(1) Integer estimatedHours
     ) {}
 
-    public record TaskResponse(Long id, Long sprintId, String title, TaskStatus status, TaskPriority priority, Long assigneeId, Long version) {}
+    public record TaskResponse(Long id, Long sprintId, String title, String description, TaskStatus status, TaskPriority priority, Long assigneeId, Long version) {}
 
     public record StartTaskRequest(@NotNull Long taskId) {}
     public record AssignSubTeamRequest(@NotNull Long subTeamId, @NotEmpty List<Long> userIds) {}
